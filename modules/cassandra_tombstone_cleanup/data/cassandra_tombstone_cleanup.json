@@ -1,0 +1,142 @@
+{
+  "name": "cassandra_tombstone_cleanup",
+  "description": "In a Cassandra database, tombstones are markers that indicate a deleted record. If tombstones are not properly cleaned up, they can cause performance issues and potentially lead to data inconsistency. A Cassandra tombstone cleanup incident is an event where there is a need to identify and remove tombstones from the database in order to maintain optimal performance and data consistency. This incident type typically involves database administrators and software engineers working together to identify the source of the tombstones and implement a solution to remove them.",
+  "params": [
+    {
+      "name": "DATABASE_NAME",
+      "value": ""
+    },
+    {
+      "name": "TABLE_NAME",
+      "value": ""
+    },
+    {
+      "name": "PATH_TO_LOG_FILE",
+      "value": ""
+    },
+    {
+      "name": "PATH_TO_METRICS_FILE",
+      "value": ""
+    },
+    {
+      "name": "KEYSPACE_NAME",
+      "value": ""
+    },
+    {
+      "name": "HOST_NAME",
+      "value": ""
+    },
+    {
+      "name": "K8S_CLUSTER_NAME",
+      "value": ""
+    },
+    {
+      "name": "NAMESPACE",
+      "value": ""
+    }
+  ],
+  "cells": [
+    {
+      "name": "cell_1",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Cassandra Tombstone Cleanup\nIn a Cassandra database, tombstones are markers that indicate a deleted record. If tombstones are not properly cleaned up, they can cause performance issues and potentially lead to data inconsistency. A Cassandra tombstone cleanup incident is an event where there is a need to identify and remove tombstones from the database in order to maintain optimal performance and data consistency. This incident type typically involves database administrators and software engineers working together to identify the source of the tombstones and implement a solution to remove them."
+    },
+    {
+      "name": "cell_2",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check Cassandra process status"
+    },
+    {
+      "name": "cell_3",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `systemctl status cassandra`"
+    },
+    {
+      "name": "cell_4",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check Cassandra logs for tombstone warnings/errors"
+    },
+    {
+      "name": "cell_5",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `grep -i tombstone /var/log/cassandra/system.log`"
+    },
+    {
+      "name": "cell_6",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## List Cassandra keyspaces"
+    },
+    {
+      "name": "cell_7",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `cqlsh -e \"DESC KEYSPACES;\"`"
+    },
+    {
+      "name": "cell_8",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## List tables in a keyspace"
+    },
+    {
+      "name": "cell_9",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `cqlsh -e \"DESC ${KEYSPACE_NAME};\"`"
+    },
+    {
+      "name": "cell_10",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Count the number of tombstones in a table"
+    },
+    {
+      "name": "cell_11",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `nodetool tablestats ${KEYSPACE_NAME}.${TABLE_NAME} | grep \"Number of tombstones\"`"
+    },
+    {
+      "name": "cell_12",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Force a cleanup of tombstones in a table"
+    },
+    {
+      "name": "cell_13",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `nodetool cleanup ${KEYSPACE_NAME} ${TABLE_NAME}`"
+    },
+    {
+      "name": "cell_14",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check for tombstones in a table after cleanup"
+    },
+    {
+      "name": "cell_15",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `nodetool tablestats ${KEYSPACE_NAME}.${TABLE_NAME} | grep \"Number of tombstones\"`"
+    },
+    {
+      "name": "cell_16",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Remove tombstones: This involves running a compaction process on the database to remove the tombstones or manually deleting them."
+    },
+    {
+      "name": "cell_17",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "host | host_name=$HOST_NAME | invoke_tombstone_removal_script($TABLE_NAME, $KEYSPACE_NAME)"
+    }
+  ]
+}
